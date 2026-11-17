@@ -1,67 +1,62 @@
-var gulp = require('gulp'),
-    ssg = require('gulp-ssg'),
-    frontmatter = require('gulp-front-matter'),
-    marked = require('gulp-marked'),
-    fs = require('fs'),
-    es = require('event-stream'),
-    mustache = require('mustache'),
-    less = require('gulp-less'),
-    autoprefixer = require('gulp-autoprefixer'),
-    raster = require('gulp-raster'),
-    rename = require('gulp-rename');
+const { Transform } = require('stream');
+const fs = require('fs');
+const gulp = require('gulp');
+const matter = require('gray-matter');
+const mustache = require('mustache');
+const less = require('gulp-less');
+const autoprefixer = require('gulp-autoprefixer').default;
 
-var site = {
+const site = {
   title: 'NE Mobilité 2030'
 };
 
+// Front-matter YAML + template mustache (les pages sont en HTML)
+function renderPage(template) {
+  return new Transform({
+    objectMode: true,
+    transform(file, enc, cb) {
+      if (!file.isBuffer()) return cb(null, file);
+      try {
+        const { data, content } = matter(String(file.contents));
+        const html = mustache.render(template, {
+          page: data,
+          site: site,
+          content
+        });
+        file.contents = Buffer.from(html);
+        cb(null, file);
+      } catch (err) {
+        cb(err);
+      }
+    }
+  });
+}
+
 gulp.task('html', function() {
-  var template = String(fs.readFileSync('src/templates/template.html'));
+  const template = fs.readFileSync('src/templates/template.html', 'utf8');
 
   return gulp.src('src/pages/**/*.html')
-    .pipe(frontmatter({
-      property: 'meta'
-    }))
-    .pipe(marked())
-    .pipe(ssg(site, {
-      property: 'meta'
-    }))
-    .pipe(es.map(function(file, cb) {
-      var html = mustache.render(template, {
-        page: file.meta,
-        site: site,
-        content: String(file.contents)
-      });
-      file.contents = Buffer.from(html);
-      cb(null, file);
-    }))
+    .pipe(renderPage(template))
     .pipe(gulp.dest('dist/'));
 });
 
+// Navigateurs cibles : champ "browserslist" du package.json
 gulp.task('less', function() {
   return gulp.src('src/less/main.less')
     .pipe(less())
-    .pipe(autoprefixer('last 2 version', 'safari 5', 'ie 8', 'ie 9', 'opera 12.1', 'ios 6', 'android 4'))
+    .pipe(autoprefixer())
     .pipe(gulp.dest('dist/css'));
 });
 
 // Rerun the task when a file changes
 gulp.task('watch', function() {
-  gulp.watch('src/less/*.less', ['less']);
-});
-
-// SVG to PNG
-gulp.task('raster', function () {
-    return gulp.src('src/static/img/*.svg')
-        .pipe(raster())
-        .pipe(rename({extname: '.png'}))
-        .pipe(gulp.dest('dist/img/'));
+  gulp.watch('src/less/*.less', gulp.series('less'));
 });
 
 // Copy static resources
 gulp.task('static', function () {
-    return gulp.src('src/static/**/*', {encoding: false})
-        .pipe(gulp.dest('dist/'));
+  return gulp.src('src/static/**/*', {encoding: false})
+    .pipe(gulp.dest('dist/'));
 });
 
-gulp.task('build', gulp.series('raster', 'static', 'html', 'less'));
-
+gulp.task('build', gulp.series('static', 'html', 'less'));
