@@ -1,15 +1,16 @@
-ne mobilité 2030
+# ne mobilité 2030
 
-# Requirements
+## Prérequis
 
-* npm
-* gulp (npm i -g gulp)
+* Node.js 22.12+ (avec npm)
 
-# Getting started
+## Démarrage
 
 ```sh
 npm install
-gulp build
+npm run build
 ```
 
-Ensuite, ouvrir un live-server dans le dossier dist généré
+Le site est généré dans `dist/` : l'ouvrir avec un serveur local (ex. `npx live-server dist`).
+
+`npm run watch` recompile le CSS à chaque modification des fichiers `src/less`.
