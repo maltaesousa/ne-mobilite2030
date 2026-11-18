@@ -5,13 +5,6 @@ var largeScreen = 950,
     isLargeScreen = jQuery(window).width() > largeScreen;
 
 jQuery(document).ready(function() {
-
-    /* Remplace les SVG par des PNG */
-    if (!Modernizr.svg) {
-        jQuery('img[src*="svg"]').attr('src', function () {
-            return jQuery(this).attr('src').replace('.svg', '.png');
-        });
-    }
     jQuery('.collapser').click(function(){
     	jQuery(this).toggleClass('open');
     });
